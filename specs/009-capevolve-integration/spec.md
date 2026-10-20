@@ -28,9 +28,9 @@ user-provided `adapter.score()` returning a single scalar reward.
 Connect them: cap-evolve drives the optimization loop (splits, trials, gating,
 memory, the sealed test run); agent-eval-harness does the evaluation (the
 existing workspace/execution/collection/judge/`compose_reward()` pipeline).
-`/eval-optimize` without `--engine capevolve` is unchanged. Local runner only
-— Harbor, EvalHub, plugin-resolved skills (`runner.plugin_dirs`), and
-prompt-mode/multi-step evaluations are out of scope for this integration.
+`/eval-optimize` without `--engine capevolve` is unchanged. Local and Harbor
+substrates; project (`.claude/skills`) and plugin-resolved (`runner.plugin_dirs`)
+skills. EvalHub and prompt-mode/multi-step evaluations are out of scope.
 
 ## Design
 
@@ -155,16 +155,37 @@ booleans, so a boolean-heavy eval composes to ≈0 everywhere with no gradient
 to climb. Keys the block rejects with a redirect, because `capevolve.yaml`
 owns them: `num_trials`, `max_iterations`, `gate_*`, `split_*`, `stall`,
 `max_usd`, `store`, `protected_paths`, `observers`, `optimizer_*`,
-`target_model`. If `optimize:`/`reward:` are absent entirely (not just
-invalid), `--dry-run` returns `{"needs_setup": true, ...}` instead of
-erroring, so `/eval-optimize --engine capevolve` can run a setup conversation
-and write the block in.
+`target_model`. If `optimize:`/`reward:` are absent, intake proposes them —
+the entry skill plus every project skill it invokes, and every judge weighted
+equally with `gate: false` — into `.capevolve/eval.optimize.yaml`, an
+`extends:` overlay, so the benchmark checkout is never modified.
+
+### Intake: a new benchmark needs no code
+
+`agent-eval-capevolve`, run from any benchmark checkout with an `eval.yaml`
+(e.g. rfe-creator), performs cap-evolve's `intake` phase itself: it resolves
+every NEEDED input from the benchmark's own files, copies cap-evolve's
+`templates/project` tree into `.capevolve/project/`, and generates the seam
+(`adapters/adapter.py`), `capevolve.yaml`, `PROJECT.md` and `intake.json`. A
+NEEDED input it cannot resolve is never guessed: `BLOCKED:` lines go to
+`PROJECT.md` and the CLI exits 1. No existing harness code is modified and
+nothing in cap-evolve changes — cap-evolve imports the generated adapter by
+path like any other.
+
+### Substrates
+
+`--runner local` runs each rollout through the eval-run scripts. `--runner
+harbor --env podman --image IMG` runs it as a private, gold-scrubbed Harbor
+task package: the candidate travels as `--skill` (a per-rollout plugin
+overlay, so no image rebuild per candidate), judging happens once in the
+in-container verifier, and the rollout reads the resulting `summary.yaml` into
+the same `compose_reward()`. `--runner evalhub` is refused at argparse.
 
 ### User journey
 
 ```
 /eval-setup --optimize                                 # once: installs cap-evolve + its skills tree
-/eval-optimize --engine capevolve --dry-run             # plan; a setup conversation if optimize:/reward: are missing
+/eval-optimize --engine capevolve --dry-run             # intake + scaffold + check + estimate; spends nothing
 /eval-optimize --engine capevolve --max-usd 420          # confirms spend, launches detached, exits
 cap-evolve watch .capevolve/run_<ts>                     # optional, the user's own terminal — real upstream command
 /eval-optimize --engine capevolve --status               # any later session; narrates progress, not raw JSON
@@ -175,7 +196,7 @@ The run is detached: a real campaign is ~5h of work against a ~55 min idle
 SIGTERM in an interactive session. The Python layer
 (`agent_eval/engines/capevolve.py`) stays headless and returns structured
 data; the skill (`skills/eval-optimize/SKILL.md`) owns everything that needs
-a conversation — the setup dialogue, the spend confirmation, and narrating
+a conversation — resolving blocked inputs, reviewing intake's defaults, the spend confirmation, and narrating
 `--status`/`--apply` in prose instead of printing raw JSON. `--apply` requires
 `final.json` (the campaign ran to completion; a stalled/killed run is
 inspected via `--status`, never auto-applied), copies the winner onto a new
@@ -187,19 +208,16 @@ Scaffold and check readiness without spending anything:
 
 ```bash
 python3 -m pip install -e '.[optimize]'
-agent-eval-capevolve --config eval.yaml --max-usd 20 --dry-run \
-  --skills-dir /path/to/cap-evolve/skills
+export CAPEVOLVE_SKILLS_DIR=/path/to/cap-evolve/skills
+cd rfe-creator && agent-eval-capevolve --max-usd 20 --dry-run
 ```
 
-Launch a three-case pilot (the live-run scope this integration supports):
+Launch a campaign, or a three-case smoke pilot:
 
 ```bash
-agent-eval-capevolve --config eval.yaml --max-usd 60 \
-  --max-iterations 2 --num-trials 1 \
-  --pilot-case-ids case-001 case-026 case-002 \
-  --runner-budget-usd 15 --judge-budget-usd 2 \
-  --optimizer opencode --optimizer-model pricetag-hosted/rits/zai-org/glm-5-3 \
-  --skills-dir /path/to/cap-evolve/skills
+agent-eval-capevolve --max-usd 50 --num-trials 3
+agent-eval-capevolve --max-usd 60 --max-iterations 2 --num-trials 1 \
+  --pilot-case-ids case-001 case-026 case-002 --runner-budget-usd 15
 ```
 
 Check progress from any later session, and apply the winner once finished:
@@ -236,22 +254,18 @@ Claude-driven skill can hold a conversation, so that layer belongs there.
 
 ## Migration
 
-No breaking change to existing usage: `/eval-optimize` without `--engine
-capevolve` is untouched, and `optimize:`/`reward:` are new optional
+No breaking change to existing usage, and no existing harness file's code is
+modified: `/eval-optimize` without `--engine capevolve` is untouched, and `optimize:`/`reward:` are new optional
 `eval.yaml` keys. `cap-evolve-core` is an optional extra
 (`pip install -e '.[optimize]'`), deliberately excluded from the `[all]`
 extra (it's a 0.x, commit-pinned package, not on PyPI).
 
 ## Open Questions
 
-**`apply_to` vs. `optimize.candidate[].source` for plugin-resolved skills.**
-For a plugin-resolved skill (`runner.plugin_dirs`), the live-during-execution
-location and the real project location coincide, so a single path could serve
-both roles. This integration rejects `runner.plugin_dirs` (plugin support is
-out of scope) and uses `apply_to` purely as the `.claude/skills/<name>`
-workspace-staging destination, which is why `--apply` needs
-`candidate[].source` tracked separately to know the real apply destination.
-Revisit if plugin support is ever added.
+**Candidates spanning several skill roots.** Intake blocks when the skills an
+entry skill invokes live in more than one skill root (e.g. some in
+`.claude/skills`, some in a plugin). An explicit `optimize:` block covering one
+root works today; a multi-root candidate would need one `apply_to` per root.
 
 **CI smoke test.** `tests/test_capevolve_poc.py` has a test that builds a
 Task/Rollout/Score and runs real `cap_evolve.check` against a fixture, but

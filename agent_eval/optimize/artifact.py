@@ -71,8 +71,14 @@ def validate_candidate_block(raw: dict, config: EvalConfig) -> tuple[dict, list[
         for right in destinations[i + 1:]:
             if left == right or left in right.parents or right in left.parents:
                 raise ValueError(f"overlapping optimize.candidate destinations: {left} and {right}")
-    if not any(Path(c["dest"]).name.lower() == "skill.md" for c in components):
-        raise ValueError("optimize.candidate requires at least one component named SKILL.md")
+    if not any(
+        Path(c["dest"]).name.lower() == "skill.md"
+        or (c["is_dir"] and (Path(c["source"]) / "SKILL.md").is_file())
+        for c in components
+    ):
+        raise ValueError(
+            "optimize.candidate requires a component named SKILL.md or a skill directory containing one"
+        )
     return block, components
 
 

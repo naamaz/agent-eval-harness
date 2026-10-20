@@ -60,6 +60,12 @@ It delegates splits, trials, gating, search memory, and test sealing to cap-evol
 the harness side is split into an engine-agnostic layer (`agent_eval/optimize/`)
 and a single file coupled to cap-evolve's API (`agent_eval/engines/capevolve.py`),
 which both reuse the normal local case pipeline and `compose_reward()`.
+Run from any benchmark checkout (e.g. rfe-creator), `agent-eval-capevolve`
+performs cap-evolve's intake phase itself and writes `.capevolve/project/`;
+the benchmark's own files are never edited (missing `optimize:`/`reward:` go
+to a `.capevolve/eval.optimize.yaml` `extends:` overlay). Rollouts run locally
+or, with `--runner harbor --env podman --image IMG`, as private Harbor task
+packages (candidate delivered as `--skill`, judged once in-container).
 
 ## Architecture
 
@@ -83,6 +89,7 @@ agent_eval/              # Python package (config, runner, state)
     kubernetes.py        # Kubernetes BaseEnvironment (OpenShift, Python client)
     templates/           # task.toml, instruction.md, test.sh templates
   optimize/              # Engine-agnostic optimization primitives (no search-engine imports)
+    intake.py            # Mine a benchmark: skill chain, default reward, runtime resources, extends: overlay
     artifact.py          # Resolve/validate optimize: candidate+apply_to+feedback+on_error; snapshot; overlay
     rollout.py           # Run ONE case end to end: workspace -> execute -> collect -> judge -> compose_reward
     export.py            # Place a rollout into the standard run-dir layout + condition.json

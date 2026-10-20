@@ -16,29 +16,32 @@ The key difference from `/eval-review`: you act autonomously. You read judge rat
 **`--engine capevolve` dispatch.** If `--engine capevolve` is among the
 arguments, this is the automated, statistically-gated cap-evolve path, not
 the interactive loop below — skip every other step in this file. Parse only
-`--config`, `--max-usd`, `--max-iterations`, `--dry-run`, `--pilot-case-ids`,
-`--runner-budget-usd`, `--judge-budget-usd`, `--optimizer`,
-`--optimizer-model`, `--skills-dir`, `--status`, and `--apply` from the
-arguments (ignore `--model`/`--run-id`/`--target-judge`, which don't apply
-here). See `docs/capevolve-poc.md` for what each mode does and the current
-scope limits (local runner only, three-case pilot). Do not proceed to Step 1
-below for a `--engine capevolve` invocation. The underlying command for every
-mode is `python3 -m agent_eval.engines.capevolve <flags>`.
+`--config`, `--max-usd`, `--max-iterations`, `--num-trials`, `--dry-run`,
+`--pilot-case-ids`, `--runner-budget-usd`, `--runner`, `--env`, `--image`, `--reintake`,
+`--optimizer`, `--optimizer-model`, `--skills-dir`, `--status`, and `--apply`
+from the arguments (ignore `--model`/`--run-id`/`--target-judge`, which don't
+apply here). See `docs/capevolve-poc.md` for what each mode does and the
+current scope limits (local or Harbor substrate; EvalHub is refused). Do not proceed to Step 1 below for a
+`--engine capevolve` invocation. The underlying command for every mode is
+`python3 -m agent_eval.engines.capevolve <flags>`, run from the benchmark's
+root (`--config` defaults to `./eval.yaml`).
 
 If `--skills-dir` wasn't given, check `tmp/optimize-config.yaml` for a
 `capevolve_skills_dir` value (written by `/eval-setup --optimize`) and use
 that instead of asking the user again.
 
-- **`--dry-run`**: run it. If the result is `{"needs_setup": true, "missing":
-  [...]}`, this project has no `optimize:`/`reward:` block yet — run a short
-  setup conversation: use `AskUserQuestion` (or ask directly) which files make
-  up the candidate skill (usually `SKILL.md` plus any `references/`) and how
-  outcomes should be scored (reuse existing judges from eval.yaml if present;
-  ask which judge or weighted combination should drive the reward otherwise).
-  Write the resulting `optimize:`/`reward:` block into `eval.yaml` with the
-  Edit tool (see the shape in `docs/capevolve-poc.md`'s "Configure eval.yaml"
-  section), then re-run `--dry-run`. Once it succeeds, narrate the result —
-  don't just print the JSON: state the train/val/test split sizes, the gate
+- **`--dry-run`**: run it. The command performs cap-evolve's intake phase
+  itself and never edits the benchmark: missing `optimize:`/`reward:` blocks
+  are proposed into `.capevolve/eval.optimize.yaml` (an `extends:` overlay).
+  If the result is `{"blocked": [...]}` (exit 1), quote each entry's `input`,
+  `why`, and `how` to the user and resolve it with them — never invent a
+  dataset, skill, or scorer to get past it — then re-run. Once it succeeds and
+  `scaffold.defaulted` is non-empty, show the user what intake chose
+  (`scaffold.candidate_components`, and the equal-weight reward over every
+  judge in the overlay) and offer to narrow the candidate or reweight judges
+  by editing the overlay with the Edit tool; re-run `--dry-run` after an edit
+  (an edited overlay is reused, `--reintake` regenerates it). Then narrate the
+  result — don't just print the JSON: state the train/val/test split sizes, the gate
   mode and `k_se`, the qualitative point that smaller real gains come back
   "indecisive" rather than "accept" at small val sizes, and the cost estimate
   as a **range**, blended with `observed_cost_per_rollout` when the response
