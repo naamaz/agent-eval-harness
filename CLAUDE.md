@@ -55,17 +55,8 @@ Includes builtin documentation generation prompts (navigation, anti-pattern, aut
 
 Prompt mode provides direct agent invocation with LLM rubric judges and flexible evaluation criteria.
 
-The optional cap-evolve integration is documented in `docs/capevolve-poc.md`.
-It delegates splits, trials, gating, search memory, and test sealing to cap-evolve;
-the harness side is split into an engine-agnostic layer (`agent_eval/optimize/`)
-and a single file coupled to cap-evolve's API (`agent_eval/engines/capevolve.py`),
-which both reuse the normal local case pipeline and `compose_reward()`.
-Run from any benchmark checkout (e.g. rfe-creator), `agent-eval-capevolve`
-performs cap-evolve's intake phase itself and writes `.capevolve/project/`;
-the benchmark's own files are never edited (missing `optimize:`/`reward:` go
-to a `.capevolve/eval.optimize.yaml` `extends:` overlay). Rollouts run locally
-or, with `--runner harbor --env podman --image IMG`, as private Harbor task
-packages (candidate delivered as `--skill`, judged once in-container).
+The optional cap-evolve integration (`agent-eval-capevolve`, `/eval-optimize
+--engine capevolve`) is documented in `docs/capevolve-poc.md`.
 
 ## Architecture
 
@@ -88,17 +79,8 @@ agent_eval/              # Python package (config, runner, state)
     podman.py            # Podman BaseEnvironment (local containers)
     kubernetes.py        # Kubernetes BaseEnvironment (OpenShift, Python client)
     templates/           # task.toml, instruction.md, test.sh templates
-  optimize/              # Engine-agnostic optimization primitives (no search-engine imports)
-    intake.py            # Mine a benchmark: skill chain, default reward, runtime resources, extends: overlay
-    artifact.py          # Resolve/validate optimize: candidate+apply_to+feedback+on_error; snapshot; overlay
-    rollout.py           # Run ONE case end to end: workspace -> execute -> collect -> judge -> compose_reward
-    export.py            # Place a rollout into the standard run-dir layout + condition.json
-    redact.py            # Gold-answer scrubbing + outcome-only feedback string
-  engines/               # Search-engine-specific integrations (optional)
-    capevolve.py         # THE file coupled to cap-evolve: validation, scaffolding, check/estimate/
-                          # launch/status/apply dispatch, agent-eval-capevolve CLI entry point
-    _bridge_template.py  # Stdlib-only CapabilityAdapter impl, copied (not imported) into each
-                          # generated project as adapters/aeh_bridge.py
+  optimize/              # Engine-agnostic optimization primitives (intake, rollout, ...)
+  engines/capevolve.py   # The only file coupled to cap-evolve (agent-eval-capevolve CLI)
   tools/
     interception.py      # Shared tool interception generation (workspace + Harbor)
   judges/                # Builtin judges (auto-discovered by category)

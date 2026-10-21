@@ -24,6 +24,11 @@ def write_condition(run_dir: Path, condition: dict) -> None:
     (Path(run_dir) / "condition.json").write_text(json.dumps(condition, indent=2) + "\n", encoding="utf-8")
 
 
+def _is_number(value) -> bool:
+    # bool is an int subclass: a stray True must never read as $1.00.
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def read_usage(run_dir: Path, summary: dict) -> tuple[float, int, str]:
     run_result = {}
     try:
@@ -32,11 +37,11 @@ def read_usage(run_dir: Path, summary: dict) -> tuple[float, int, str]:
         pass
     cost = run_result.get("cost_usd")
     usage = run_result.get("token_usage") or {}
-    tokens = sum(int(value or 0) for value in usage.values() if isinstance(value, (int, float)))
+    tokens = sum(int(value) for value in usage.values() if _is_number(value))
     judge_usage = summary.get("judge_usage") or {}
     judge_cost = judge_usage.get("judge_cost_usd")
-    has_runner_cost = isinstance(cost, (int, float))
-    has_judge_cost = isinstance(judge_cost, (int, float))
+    has_runner_cost = _is_number(cost)
+    has_judge_cost = _is_number(judge_cost)
     total_cost = (float(cost) if has_runner_cost else 0.0) + (
         float(judge_cost) if has_judge_cost else 0.0
     )

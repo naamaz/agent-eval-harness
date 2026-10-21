@@ -22,6 +22,7 @@ import importlib.util
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -86,6 +87,17 @@ def validate_optimize_block(raw: dict, config: EvalConfig) -> tuple[dict, list[d
         raise ValueError("dataset.path is required")
 
     block, components = artifact.validate_candidate_block(raw, config)
+    # compose_reward() skips a weight whose judge produced no value, so a reward
+    # naming a judge this config doesn't define (e.g. an overlay carried over
+    # from another suite) would silently drop it from every measurement.
+    judges = {j.name for j in config.judges}
+    named = set((config.reward.weights or {}) if config.reward.judge is None else {config.reward.judge})
+    unknown = sorted(named - judges)
+    if unknown:
+        raise ValueError(
+            f"reward names judge(s) this eval config does not define: {', '.join(unknown)}; "
+            f"defined: {', '.join(sorted(judges))}"
+        )
     apply_path = artifact.relative_path(str(block.get("apply_to") or "").rstrip("/"), "optimize.apply_to")
     if intake.source_for_apply_to(config.project_root, config, apply_path.as_posix()) is None:
         raise ValueError(
@@ -345,6 +357,14 @@ def prepare_project(
     started = time.time()
     project_root = Path.cwd().resolve()
     project_dir = _project_dir_for(project_root)
+    running = read_campaign_manifest(project_dir) if project_dir.is_dir() else None
+    if running and _is_alive(running["pid"], running.get("create_time")):
+        # Its rollout subprocesses re-read candidate.json/substrate.json: a
+        # rewrite mid-campaign would change the cases or substrate under it.
+        raise RuntimeError(
+            f"a campaign is still running (pid {running['pid']}, {running.get('run_dir')}); "
+            f"wait for it (--status) or stop it ({running.get('stop_hint')}) before re-running intake"
+        )
     _ensure_project_dir(project_dir)
     try:
         base_config = intake.find_eval_config(project_root, config_path)
@@ -570,10 +590,12 @@ def prepare_project(
 
 
 def _calibrate_cost_from_past_runs(config: EvalConfig, project_root: Path) -> float | None:
-    """Average per-rollout cost from this eval's own prior runs, if any exist.
+    """Average runner cost of ONE case (one rollout) from this eval's prior runs.
 
-    Not a guess: only returns a figure when real run_result.json cost data is
-    on disk for this eval name; otherwise omits it rather than invent one.
+    A run's ``cost_usd`` covers every case it ran, so it is divided by its case
+    count: one for this integration's own rollouts (they carry a
+    ``condition.json``), else the ``per_case`` entries. A run whose case count
+    is unknown is skipped rather than guessed. Judge spend is not included.
     """
     base = Path(os.environ.get("AGENT_EVAL_RUNS_DIR", "eval/runs"))
     if not base.is_absolute():
@@ -591,8 +613,11 @@ def _calibrate_cost_from_past_runs(config: EvalConfig, project_root: Path) -> fl
         except (OSError, ValueError):
             continue
         cost = data.get("cost_usd")
-        if isinstance(cost, (int, float)) and cost > 0:
-            costs.append(float(cost))
+        if isinstance(cost, bool) or not isinstance(cost, (int, float)) or cost <= 0:
+            continue
+        n_cases = 1 if (run_dir / "condition.json").is_file() else len(data.get("per_case") or {})
+        if n_cases:
+            costs.append(float(cost) / n_cases)
     if not costs:
         return None
     return round(sum(costs) / len(costs), 4)
@@ -755,7 +780,17 @@ def launch_detached(
         # Popen dup()s log_handle's fd into the child before exec; closing our
         # copy when this `with` block exits does not affect the child's output.
 
-    run_dir = _wait_for_new_run_dir(runs_root, before, proc, log_file)
+    try:
+        run_dir = _wait_for_new_run_dir(runs_root, before, proc, log_file)
+    except RuntimeError:
+        # Without a run dir there is no campaign record, so --status could not
+        # see it and a retry would start a second one: stop it instead.
+        if proc.poll() is None:
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except (ProcessLookupError, PermissionError):
+                pass
+        raise
 
     manifest = {
         "pid": proc.pid,
@@ -893,6 +928,19 @@ def _git(args: list[str], cwd: Path, **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True, **kwargs)
 
 
+def _replace_tracked_dir(src: Path, dest: Path, repo_root: Path) -> None:
+    """Make ``dest`` match the winner without ever deleting a file git cannot
+    restore: tracked files the winner dropped are removed, the winner's files
+    are copied in, and untracked or ignored files are left alone."""
+    winner = {path.relative_to(src) for path in src.rglob("*") if path.is_file()}
+    tracked = _git(["ls-files", "-z", "--", str(dest)], cwd=repo_root).stdout.split("\0")
+    for rel in filter(None, tracked):
+        path = repo_root / rel
+        if path.relative_to(dest) not in winner:
+            path.unlink()
+    shutil.copytree(src, dest, dirs_exist_ok=True)
+
+
 def apply_winner(*, project_root: Path, harness_manifest: dict, campaign_manifest: dict) -> dict:
     """Copy the finished campaign's winning candidate onto a new git branch.
 
@@ -917,9 +965,31 @@ def apply_winner(*, project_root: Path, harness_manifest: dict, campaign_manifes
             f"see {run_dir / 'report.md'} for why"
         )
 
-    candidate_dir = run_dir / "candidates" / str(best_id)
+    best_id = str(best_id)
+    candidates_root = (run_dir / "candidates").resolve()
+    candidate_dir = (candidates_root / best_id).resolve()
+    if Path(best_id).name != best_id or candidate_dir.parent != candidates_root:
+        # final.json is campaign output, not trusted: a traversal or absolute
+        # id must not select files outside the candidates tree.
+        raise RuntimeError(f"final.json names an invalid winner id: {best_id!r}")
     if not candidate_dir.is_dir():
         raise RuntimeError(f"winning candidate snapshot not found: {candidate_dir}")
+
+    # Validate every destination before anything is touched: only paths inside
+    # this repository (never the repository root or .git) can be restored by
+    # the git rollback below.
+    repo_root = Path(_git(["rev-parse", "--show-toplevel"], cwd=project_root).stdout.strip()).resolve()
+    targets = []
+    for component in harness_manifest["candidate"]:
+        rel = artifact.relative_path(str(component["dest"]).rstrip("/"), "candidate dest")
+        src = candidate_dir / rel
+        dest = Path(component["source"]).resolve()
+        if dest == repo_root or not dest.is_relative_to(repo_root) \
+                or repo_root / ".git" in (dest, *dest.parents):
+            raise RuntimeError(f"refusing to apply a candidate outside the repository: {dest}")
+        if not src.exists():
+            raise RuntimeError(f"winning candidate is missing component {component['dest']}: {src}")
+        targets.append((src, dest, bool(component.get("is_dir"))))
 
     # The campaign's own state lives in the benchmark checkout under
     # .capevolve/, which the benchmark need not gitignore: it is never part
@@ -928,20 +998,19 @@ def apply_winner(*, project_root: Path, harness_manifest: dict, campaign_manifes
     if dirty:
         raise RuntimeError("project working tree is not clean; commit or stash your changes before --apply")
     current_branch = _git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=project_root).stdout.strip()
+    if current_branch == "HEAD":
+        # Detached HEAD: return to the exact commit, not to "HEAD" (which
+        # would by then name the new branch).
+        current_branch = _git(["rev-parse", "HEAD"], cwd=project_root).stdout.strip()
 
     branch = f"capevolve/{run_dir.name}"
     _git(["checkout", "-b", branch], cwd=project_root)
     committed = False
     try:
         changed = []
-        for component in harness_manifest["candidate"]:
-            src = candidate_dir / component["dest"]
-            dest = Path(component["source"])
-            if not src.exists():
-                raise RuntimeError(f"winning candidate is missing component {component['dest']}: {src}")
-            if component.get("is_dir"):
-                shutil.rmtree(dest, ignore_errors=True)
-                shutil.copytree(src, dest)
+        for src, dest, is_dir in targets:
+            if is_dir:
+                _replace_tracked_dir(src, dest, repo_root)
             else:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)

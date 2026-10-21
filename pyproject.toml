@@ -43,7 +43,8 @@ anova = [
     "pingouin>=0.6.1",
 ]
 optimize = [
-    "cap-evolve-core @ git+https://github.com/skillberry-ai/cap-evolve.git@1d40d163c22a57c11a1764063cd48722e36168bc#subdirectory=core",
+    # cap-evolve v0.2.0, pinned to the tag's commit (a tag can move; a SHA cannot).
+    "cap-evolve-core @ git+https://github.com/skillberry-ai/cap-evolve.git@520ecbe8b9963588eb8d53e3ae29a4ccc1f8436c#subdirectory=core",
 ]
 all = [
     "mlflow[genai]>=3.5",

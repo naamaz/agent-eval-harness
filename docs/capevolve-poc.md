@@ -281,7 +281,9 @@ those on the CLI instead.
 
 ## Install and dry-run
 
-Install the pinned optional engine dependency and the cap-evolve skills tree.
+Install the pinned optional engine dependency — cap-evolve **v0.2.0** (commit
+`520ecbe8b`; its `core/pyproject.toml` still reads `0.1.0`, the tag did not bump
+it) — and the cap-evolve skills tree from the same version.
 The core package alone does not include optimizer/phase skills or the project
 templates.
 
@@ -369,11 +371,48 @@ untouched — review or merge the branch yourself. The result also includes a
 look better because some cases were seen during the search) and a
 `suggested_next_step` naming that confirmation run.
 
+## Outputs
+
+A finished campaign leaves two sets of output.
+
+**cap-evolve's campaign record** — `.capevolve/run_<ts>/`:
+
+| File | What it holds |
+|---|---|
+| `final.json` | the winner (`best_id`), sealed test reward ± stderr, test delta, per-task test rewards |
+| `report.md` | baseline vs best val, held-out test, val→test gap (the selection optimism) |
+| `dashboard.html` | a self-contained static dashboard — open it in a browser |
+| `baseline.json`, `splits.json`, `state.json` | baseline scores, the frozen split, budget and spend |
+| `events.jsonl`, `eval_index.jsonl` | every step, evaluation and gate decision |
+| `history.jsonl`, `rejected.jsonl` | accepted / rejected candidates (written once there is one) |
+| `candidates/<id>/` | each candidate's skills, plus the proposer's `DIAGNOSIS.json` and `PROCESS.md` |
+| `JOURNAL.md`, `INSIGHTS.md`, `META_INSIGHTS.md` | the optimizer's cross-iteration memory |
+
+Dashboards: `dashboard.html` is always written; the live web dashboard is the
+separate `capevolve-dashboard` package (`pip install -e <cap-evolve>/dashboard/backend`),
+and `cap-evolve watch .capevolve/run_<ts>` streams one line per gate decision.
+With an `mlflow:` block in the eval config, the generated `capevolve.yaml` adds an
+MLflow observer (needs cap-evolve's `capevolve_telemetry` package).
+
+**One harness run dir per rollout** — `$AGENT_EVAL_RUNS_DIR/<eval>/opt-<case>-<candidate>-<seed>-<id>/`
+with the usual `run_result.json`, `summary.yaml`, `report.html`, `cases/`,
+transcripts and subagent logs, plus a `condition.json` naming the engine,
+substrate, candidate, case and seed. The harness's own tools read them:
+
+| Tool | Over rollout run dirs |
+|---|---|
+| `/eval-compare` | works — discovers runs by `summary.yaml` + `run_result.json` |
+| `/eval-mlflow` | works — `log_results.py --run-id <opt-…>` |
+| `/eval-review` | works — per run dir |
+| `report.html` | written per rollout (local by `report.py`, Harbor by `agent_eval.harbor.run`) |
+| `/eval-anova` | **not yet** — its `condition.json` schema is `{condition_id, levels}`, so it would treat each rollout as its own condition; don't run it over `opt-*` runs |
+
 ## From `/eval-optimize`
 
 `/eval-optimize --engine capevolve [--dry-run | --max-usd N | --status | --apply]`
 delegates to `agent-eval-capevolve` with the equivalent flags, adding what only
-a conversation can do: resolving `blocked` inputs with you and reviewing the
-defaults intake chose, a spend confirmation before launching, and narrating
+a conversation can do: resolving `blocked` inputs with you, telling you which
+defaults intake used (it uses them as-is; edit the overlay only if you want
+to), a spend confirmation before launching, and narrating
 `--status`/`--apply` results in prose instead of printing raw JSON. Omit `--engine` for the existing
 interactive diagnose/edit/verify loop.

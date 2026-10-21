@@ -343,6 +343,115 @@ def test_batch_rollout_returns_the_run_level_transcript(tmp_path, monkeypatch):
     assert result["rollout"]["error"] is None
 
 
+def test_batch_infra_error_is_missing_data_not_a_low_score(tmp_path, monkeypatch):
+    """Qodo #2: batch run_result.json has no per_case; a timeout/budget stop is a
+    top-level error_class and must not be scored as a real (low) reward."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("AGENT_EVAL_RUNS_DIR", str(tmp_path / "runs"))
+    _demo_eval_yaml(tmp_path, mode="batch")
+    manifest = {
+        "harness_root": str(tmp_path), "project_root": str(tmp_path),
+        "eval_config": str(tmp_path / "eval.yaml"), "eval_name": "demo-eval",
+        "execution_mode": "batch", "apply_to": ".claude/skills/demo",
+        "candidate": [{"dest": "SKILL.md", "is_dir": False}], "task_ids": ["case-1"],
+        "runner_budget_usd": None, "runtime_resources": [],
+    }
+    candidate_dir = tmp_path / "candidate"
+    candidate_dir.mkdir()
+    (candidate_dir / "SKILL.md").write_text("candidate", encoding="utf-8")
+
+    def _fake_run_script(manifest_, name, *args, allow_nonzero=False):
+        if name == "workspace.py":
+            rollout._case_workspace(args[args.index("--run-id") + 1]).mkdir(parents=True, exist_ok=True)
+        elif name == "execute.py":
+            run_dir = Path(args[args.index("--output") + 1])
+            run_dir.mkdir(parents=True, exist_ok=True)
+            (run_dir / "run_result.json").write_text(
+                json.dumps({"exit_code": 1, "error_class": "timeout"}), encoding="utf-8")
+            (run_dir / "summary.yaml").write_text(
+                "per_case:\n  case-1:\n    quality:\n      value: false\n", encoding="utf-8")
+
+    monkeypatch.setattr(rollout, "_run_script", _fake_run_script)
+    result = rollout.run_case(manifest, "case-1", candidate_dir, seed=0)
+    assert result["rollout"]["error"] == "harness runner failed before producing a measurement"
+
+
+def test_harbor_transcript_is_confined_to_the_run(tmp_path):
+    """Qodo #3: harbor_job_dir comes from run_result.json and is not trusted."""
+    run_dir = tmp_path / "run"
+    outside = tmp_path / "elsewhere/trial/agent"
+    outside.mkdir(parents=True)
+    (outside / "claude-code.txt").write_text("not ours", encoding="utf-8")
+    assert rollout._harbor_transcript(str(tmp_path / "elsewhere"), run_dir) == ""
+    assert rollout._harbor_transcript(str(run_dir / "harbor-jobs/../../elsewhere"), run_dir) == ""
+    inside = run_dir / "harbor-jobs/job/trial/agent"
+    inside.mkdir(parents=True)
+    (inside / "claude-code.txt").write_text("ours", encoding="utf-8")
+    assert rollout._harbor_transcript(str(run_dir / "harbor-jobs/job"), run_dir) == "ours"
+
+
+def test_boolean_costs_are_not_spend(tmp_path):
+    """Qodo #4: bool is an int subclass; True must not read as $1.00."""
+    from agent_eval.optimize import export
+    (tmp_path / "run_result.json").write_text(json.dumps({"cost_usd": True}), encoding="utf-8")
+    assert export.read_usage(tmp_path, {"judge_usage": {"judge_cost_usd": True}}) == (0.0, 0, "unavailable")
+
+
+def test_candidate_overlay_rejects_a_symlinked_intermediate_directory(tmp_path):
+    """Qodo #14: the check must cover directories between the candidate root
+    and a multi-part component, not just the component itself."""
+    (tmp_path / "outside/refs").mkdir(parents=True)
+    (tmp_path / "outside/refs/a.md").write_text("outside", encoding="utf-8")
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    (candidate / "nested").symlink_to(tmp_path / "outside", target_is_directory=True)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    with pytest.raises(ValueError, match="must not contain symlinks"):
+        artifact.stage_candidate(workspace, candidate, "skills/demo",
+                                 [{"dest": "nested/refs", "is_dir": True}])
+
+
+def test_local_rollout_writes_the_standard_report_and_tolerates_its_failure(tmp_path, monkeypatch):
+    """Each rollout run dir gets the same report.html a plain /eval-run leaves;
+    a failing report never costs the measurement."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("AGENT_EVAL_RUNS_DIR", str(tmp_path / "runs"))
+    _demo_eval_yaml(tmp_path, mode="batch")
+    manifest = {
+        "harness_root": str(tmp_path), "project_root": str(tmp_path),
+        "eval_config": str(tmp_path / "eval.yaml"), "eval_name": "demo-eval",
+        "execution_mode": "batch", "apply_to": ".claude/skills/demo",
+        "candidate": [{"dest": "SKILL.md", "is_dir": False}], "task_ids": ["case-1"],
+        "runner_budget_usd": None, "runtime_resources": [],
+    }
+    candidate_dir = tmp_path / "candidate"
+    candidate_dir.mkdir()
+    (candidate_dir / "SKILL.md").write_text("candidate", encoding="utf-8")
+    calls = []
+
+    def _fake_run_script(manifest_, name, *args, allow_nonzero=False):
+        calls.append((name, args))
+        if name == "workspace.py":
+            rollout._case_workspace(args[args.index("--run-id") + 1]).mkdir(parents=True, exist_ok=True)
+        elif name == "execute.py":
+            run_dir = Path(args[args.index("--output") + 1])
+            run_dir.mkdir(parents=True, exist_ok=True)
+            (run_dir / "run_result.json").write_text("{}", encoding="utf-8")
+            (run_dir / "summary.yaml").write_text(
+                "per_case:\n  case-1:\n    quality:\n      value: true\n", encoding="utf-8")
+        elif name == "report.py":
+            raise RuntimeError("report.py failed (1): template error")
+
+    monkeypatch.setattr(rollout, "_run_script", _fake_run_script)
+    result = rollout.run_case(manifest, "case-1", candidate_dir, seed=0)
+
+    report_args = dict(calls)["report.py"]
+    assert report_args[report_args.index("--run-id") + 1] == result["rollout"]["metadata"]["harness_run_id"]
+    assert result["rollout"]["error"] is None
+    assert result["rollout"]["metadata"]["reward"] == 1.0
+
+
 # ── agent_eval.engines.capevolve: scaffolding ────────────────────────────────
 
 def test_prepare_project_generates_adapter_seed_and_search_spec(tmp_path, monkeypatch):
@@ -641,9 +750,79 @@ def test_overlay_is_re_pointed_when_the_eval_config_changes(tmp_path, monkeypatc
     import yaml
     layered = yaml.safe_load(overlay.read_text())
     assert layered["extends"] == "../eval-profiles/fast.yaml"
-    assert layered["reward"]["weights"]["quality"] == 3.0  # the edit survived
+    # Qodo #1: another config has its own judges and skills, so the blocks are
+    # proposed afresh for it (and reported as defaults), never carried over.
+    assert layered["reward"]["weights"]["quality"] == 1.0
+    assert result["defaulted"] == ["optimize", "reward"]
     manifest = json.loads((Path(result["project_dir"]) / "adapters/candidate.json").read_text())
     assert manifest["target_model"] == "haiku"
+
+
+def test_reward_naming_an_undefined_judge_is_blocked(tmp_path, monkeypatch):
+    """Qodo #1: compose_reward() skips a weight with no judge value, so a stale
+    judge name would silently drop out of every measurement."""
+    monkeypatch.chdir(tmp_path)
+    _bare_benchmark(tmp_path)
+    with open(tmp_path / "eval.yaml", "a", encoding="utf-8") as fh:
+        fh.write("reward:\n  formula: weighted\n  weights: {files_exist: 1.0, rfe_quality: 1.0}\n  gate: false\n")
+    with pytest.raises(intake.IntakeBlocked) as excinfo:
+        capevolve.prepare_project(max_usd=5, optimizer="mock")
+    assert "rfe_quality" in excinfo.value.blocked[0]["why"]
+
+
+def test_intake_refuses_to_rewrite_a_live_campaign(tmp_path, monkeypatch):
+    """Qodo #7: rollouts re-read candidate.json/substrate.json mid-campaign."""
+    monkeypatch.chdir(tmp_path)
+    _bare_benchmark(tmp_path)
+    result = capevolve.prepare_project(max_usd=5, optimizer="mock")
+    project = Path(result["project_dir"])
+    before = (project / "adapters/candidate.json").read_text()
+    capevolve._write_campaign_manifest(project, {
+        "pid": os.getpid(), "create_time": capevolve._process_create_time(os.getpid()),
+        "run_dir": str(tmp_path / ".capevolve/run_x"), "stop_hint": f"kill {os.getpid()}",
+    })
+    with pytest.raises(RuntimeError, match="campaign is still running"):
+        capevolve.prepare_project(max_usd=5, optimizer="mock", max_iterations=3)
+    assert (project / "adapters/candidate.json").read_text() == before
+
+
+def test_launch_stops_a_campaign_that_never_creates_a_run_dir(tmp_path, monkeypatch):
+    """Qodo #12: a slow start must not leave an untracked, spending process."""
+    project_dir = tmp_path / ".capevolve/project"
+    project_dir.mkdir(parents=True)
+    monkeypatch.setattr(capevolve.sys, "executable", "/bin/sh")
+    monkeypatch.setattr(capevolve, "_RUN_DIR_POLL_TIMEOUT_S", 0.3)
+    real_popen = capevolve.subprocess.Popen
+    seen = {}
+
+    def _popen(cmd, **kwargs):
+        seen["proc"] = real_popen(["sleep", "30"], **kwargs)
+        return seen["proc"]
+
+    monkeypatch.setattr(capevolve.subprocess, "Popen", _popen)
+    with pytest.raises(RuntimeError, match="did not create a run directory"):
+        capevolve.launch_detached(project_root=tmp_path, project_dir=project_dir, spec_path="s.yaml",
+                                  max_usd=1, max_iterations=1, skills_dir=None, harness_root=tmp_path)
+    assert seen["proc"].wait(timeout=5) is not None
+    assert capevolve.read_campaign_manifest(project_dir) is None
+
+
+def test_cost_hint_is_per_case_runner_cost(tmp_path, monkeypatch):
+    """Qodo #13: a run's cost_usd covers all its cases; divide before averaging."""
+    monkeypatch.chdir(tmp_path)
+    _bare_benchmark(tmp_path)
+    from agent_eval.config import EvalConfig
+    config = EvalConfig.from_yaml("eval.yaml")
+    runs = tmp_path / "eval/runs" / config.eval_name()
+    (runs / "full").mkdir(parents=True)
+    (runs / "full/run_result.json").write_text(json.dumps(
+        {"cost_usd": 40.0, "per_case": {f"case-{i}": {} for i in range(4)}}), encoding="utf-8")
+    (runs / "opt-1").mkdir()
+    (runs / "opt-1/run_result.json").write_text(json.dumps({"cost_usd": 12.0}), encoding="utf-8")
+    (runs / "opt-1/condition.json").write_text("{}", encoding="utf-8")
+    (runs / "batch-unknown").mkdir()
+    (runs / "batch-unknown/run_result.json").write_text(json.dumps({"cost_usd": 99.0}), encoding="utf-8")
+    assert capevolve._calibrate_cost_from_past_runs(config, tmp_path) == 11.0  # (10 + 12) / 2
 
 
 @pytest.mark.skipif(importlib.util.find_spec("cap_evolve") is None,
@@ -719,10 +898,14 @@ def test_execute_harbor_generates_a_scrubbed_private_package_and_reads_its_summa
         if cmd[0].endswith("harbor.py"):
             package = Path(cmd[cmd.index("--out") + 1]) / "case-1"
             (package / "environment").mkdir(parents=True)
-            (package / "environment/answers.yaml").write_text("gold", encoding="utf-8")
+            (package / "environment/answers.yaml").write_text("interceptor guidance", encoding="utf-8")
+            (package / "environment/annotations.yaml").write_text("gold", encoding="utf-8")
             state["package"] = package
         else:
-            assert not (state["package"] / "environment/answers.yaml").exists()
+            # answers.yaml is the AskUserQuestion interceptor's guidance (kept,
+            # as in a plain /eval-run); annotations.yaml is the judges' key.
+            assert (state["package"] / "environment/answers.yaml").is_file()
+            assert not (state["package"] / "environment/annotations.yaml").exists()
             job = run_dir / "harbor-jobs/job-1/trial-1/agent"
             job.mkdir(parents=True)
             (job / "claude-code.txt").write_text("transcript", encoding="utf-8")
@@ -1535,3 +1718,73 @@ def test_apply_winner_refuses_when_the_seed_won(tmp_path):
             project_root=project_root, harness_manifest=harness_manifest, campaign_manifest=campaign_manifest,
         )
     assert _current_branch(project_root) in ("main", "master")
+
+
+@pytest.mark.parametrize("forged", ["../../escape", "/etc", "cand_1/../../x"])
+def test_apply_winner_rejects_a_forged_winner_id(tmp_path, forged):
+    """Qodo #6: best_id comes from final.json and must name a candidates/ entry."""
+    project_root, harness_manifest, campaign_manifest, skill_path, run_dir = _apply_fixture_in_checkout(tmp_path)
+    (run_dir / "final.json").write_text(json.dumps({"best_id": forged}), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="invalid winner id"):
+        capevolve.apply_winner(project_root=project_root, harness_manifest=harness_manifest,
+                               campaign_manifest=campaign_manifest)
+    assert skill_path.read_text(encoding="utf-8") == "original skill"
+
+
+@pytest.mark.parametrize("where", ["outside", "repo_root", "git_dir"])
+def test_apply_winner_refuses_destinations_git_cannot_restore(tmp_path, where):
+    """Qodo #9/#11: validated before anything is touched — a plugin outside the
+    repository, the repository root itself, or .git are never written."""
+    project_root, harness_manifest, campaign_manifest, skill_path, run_dir = _apply_fixture_in_checkout(tmp_path)
+    outside = tmp_path / "plugin/skills/demo"
+    outside.mkdir(parents=True)
+    (outside / "SKILL.md").write_text("plugin original", encoding="utf-8")
+    dest = {"outside": outside, "repo_root": project_root, "git_dir": project_root / ".git"}[where]
+    (run_dir / "candidates/cand_1/demo").mkdir()
+    (run_dir / "candidates/cand_1/demo/SKILL.md").write_text("winner", encoding="utf-8")
+    harness_manifest["candidate"] = [{"dest": "demo", "source": str(dest), "is_dir": True}]
+
+    with pytest.raises(RuntimeError, match="outside the repository"):
+        capevolve.apply_winner(project_root=project_root, harness_manifest=harness_manifest,
+                               campaign_manifest=campaign_manifest)
+    assert (outside / "SKILL.md").read_text(encoding="utf-8") == "plugin original"
+    assert (project_root / ".git" / "HEAD").is_file()
+    assert _current_branch(project_root) in ("main", "master")
+
+
+def test_apply_winner_keeps_ignored_files_and_drops_only_tracked_ones(tmp_path):
+    """Qodo #5: a directory component is replaced file-by-file, so ignored or
+    untracked files inside it survive; tracked files the winner removed go."""
+    project_root, harness_manifest, campaign_manifest, skill_path, run_dir = _apply_fixture_in_checkout(tmp_path)
+    skill_dir = skill_path.parent
+    (skill_dir / "old.md").write_text("tracked, dropped by the winner", encoding="utf-8")
+    (project_root / ".gitignore").write_text("*.local\n", encoding="utf-8")
+    _git_commit_all(project_root, "add old.md and ignore rule")
+    (skill_dir / "notes.local").write_text("ignored local data", encoding="utf-8")
+    winner = run_dir / "candidates/cand_1/demo"
+    winner.mkdir()
+    (winner / "SKILL.md").write_text("winner skill", encoding="utf-8")
+    harness_manifest["candidate"] = [{"dest": "demo", "source": str(skill_dir), "is_dir": True}]
+
+    result = capevolve.apply_winner(project_root=project_root, harness_manifest=harness_manifest,
+                                    campaign_manifest=campaign_manifest)
+
+    files = subprocess.run(["git", "ls-tree", "-r", "--name-only", result["branch"], "--", "skills/demo"],
+                           cwd=project_root, capture_output=True, text=True, check=True).stdout.split()
+    assert files == ["skills/demo/SKILL.md"]
+    assert (skill_dir / "notes.local").read_text(encoding="utf-8") == "ignored local data"
+
+
+def test_apply_winner_returns_to_a_detached_head(tmp_path):
+    """Qodo #15: from a detached HEAD, --apply returns to the same commit."""
+    project_root, harness_manifest, campaign_manifest, skill_path, run_dir = _apply_fixture_in_checkout(tmp_path)
+    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=project_root, capture_output=True,
+                         text=True, check=True).stdout.strip()
+    subprocess.run(["git", "checkout", "-q", "--detach", sha], cwd=project_root, check=True)
+
+    capevolve.apply_winner(project_root=project_root, harness_manifest=harness_manifest,
+                           campaign_manifest=campaign_manifest)
+
+    assert _current_branch(project_root) == "HEAD"
+    assert subprocess.run(["git", "rev-parse", "HEAD"], cwd=project_root, capture_output=True,
+                          text=True, check=True).stdout.strip() == sha

@@ -161,6 +161,11 @@ def stage_candidate(
     for component in components:
         rel = relative_path(str(component["dest"]).rstrip("/"), "optimize.candidate.dest")
         src = candidate / rel
+        for depth in range(1, len(rel.parts)):
+            # A proposer-made link at an intermediate directory would pull
+            # files from outside the candidate into the workspace.
+            if (candidate / Path(*rel.parts[:depth])).is_symlink():
+                raise ValueError(f"candidate files must not contain symlinks: {candidate / Path(*rel.parts[:depth])}")
         if not src.exists():
             raise FileNotFoundError(f"candidate is missing configured component {rel}")
         _reject_symlinks(src)

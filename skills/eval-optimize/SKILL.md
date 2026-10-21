@@ -23,8 +23,8 @@ from the arguments (ignore `--model`/`--run-id`/`--target-judge`, which don't
 apply here). See `docs/capevolve-poc.md` for what each mode does and the
 current scope limits (local or Harbor substrate; EvalHub is refused). Do not proceed to Step 1 below for a
 `--engine capevolve` invocation. The underlying command for every mode is
-`python3 -m agent_eval.engines.capevolve <flags>`, run from the benchmark's
-root (`--config` defaults to `./eval.yaml`).
+`python3 ${CLAUDE_SKILL_DIR}/scripts/capevolve.py <flags>`, run from the
+benchmark's root (`--config` defaults to the benchmark's eval config).
 
 If `--skills-dir` wasn't given, check `tmp/optimize-config.yaml` for a
 `capevolve_skills_dir` value (written by `/eval-setup --optimize`) and use
@@ -35,12 +35,13 @@ that instead of asking the user again.
   are proposed into `.capevolve/eval.optimize.yaml` (an `extends:` overlay).
   If the result is `{"blocked": [...]}` (exit 1), quote each entry's `input`,
   `why`, and `how` to the user and resolve it with them — never invent a
-  dataset, skill, or scorer to get past it — then re-run. Once it succeeds and
-  `scaffold.defaulted` is non-empty, show the user what intake chose
-  (`scaffold.candidate_components`, and the equal-weight reward over every
-  judge in the overlay) and offer to narrow the candidate or reweight judges
-  by editing the overlay with the Edit tool; re-run `--dry-run` after an edit
-  (an edited overlay is reused, `--reintake` regenerates it). Then narrate the
+  dataset, skill, or scorer to get past it — then re-run. When the eval config
+  has no `optimize:`/`reward:` (`scaffold.defaulted` is non-empty), the run
+  uses intake's defaults as-is: tell the user what they are
+  (`scaffold.candidate_components`, and every judge weighted equally with no
+  pass/fail gate) without asking whether to change them. Edit the overlay only
+  if the user asks to (an edited overlay is reused; `--reintake` regenerates
+  it), then re-run `--dry-run`. Then narrate the
   result — don't just print the JSON: state the train/val/test split sizes, the gate
   mode and `k_se`, the qualitative point that smaller real gains come back
   "indecisive" rather than "accept" at small val sizes, and the cost estimate
@@ -61,8 +62,8 @@ that instead of asking the user again.
   finished / stopped — if stopped, say to check `log_file`), the
   accepted/rejected/indecisive iteration counts, spend vs. budget, and an
   honest caveat on the error bars (the `spent`/`budget` figures carry no
-  variance info by themselves — note that gains near the gate's resolution
-  are uncertain). If `final` is present, also summarize what the winning
+  variance info by themselves, and gains near the gate's resolution are
+  uncertain). If `final` is present, also summarize what the winning
   candidate changed: `git diff` the seed capability
   (`.capevolve/project/seed_capability/`) against
   `<run_dir>/candidates/<best_id>/` and describe the change in a sentence or

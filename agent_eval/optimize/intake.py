@@ -350,9 +350,12 @@ def run_intake(project_root: Path, config_path: Path, *, reintake: bool = False)
         if not stale_base and not shadows:
             return {"config_path": overlay.resolve(), "base_config": config_path,
                     "overlay": str(overlay), "defaulted": [], "reused_overlay": True}
-        # Drop the blocks the eval config now declares; keep any edits to the
-        # rest (the base lacks those keys, so their merged value is the overlay's).
-        kept = {key: layered[key] for key in missing if key in layered}
+        # Same base: drop the blocks the eval config now declares and keep any
+        # edits to the rest (the base lacks those keys, so their merged value is
+        # the overlay's). A different base (another suite or profile) has its own
+        # judges and skills, so its blocks are proposed afresh, never carried over.
+        if not stale_base:
+            kept = {key: layered[key] for key in missing if key in layered}
 
     additions, defaulted = dict(kept), []
     if "optimize" in missing and "optimize" not in kept:

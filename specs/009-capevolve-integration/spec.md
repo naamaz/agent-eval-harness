@@ -37,7 +37,7 @@ skills. EvalHub and prompt-mode/multi-step evaluations are out of scope.
 ### Architecture: an engine-agnostic layer + one coupled file
 
 ```
-cap-evolve (external, optional dependency, pinned to a commit)
+cap-evolve (external, optional dependency, pinned to v0.2.0 at commit 520ecbe8b)
   owns: splits, trials, acceptance gating, cross-iteration memory,
   the sealed test run, the run directory
 
@@ -196,7 +196,7 @@ The run is detached: a real campaign is ~5h of work against a ~55 min idle
 SIGTERM in an interactive session. The Python layer
 (`agent_eval/engines/capevolve.py`) stays headless and returns structured
 data; the skill (`skills/eval-optimize/SKILL.md`) owns everything that needs
-a conversation — resolving blocked inputs, reviewing intake's defaults, the spend confirmation, and narrating
+a conversation — resolving blocked inputs, reporting the defaults intake used (applied as-is, never asked about), the spend confirmation, and narrating
 `--status`/`--apply` in prose instead of printing raw JSON. `--apply` requires
 `final.json` (the campaign ran to completion; a stalled/killed run is
 inspected via `--status`, never auto-applied), copies the winner onto a new
@@ -258,7 +258,7 @@ No breaking change to existing usage, and no existing harness file's code is
 modified: `/eval-optimize` without `--engine capevolve` is untouched, and `optimize:`/`reward:` are new optional
 `eval.yaml` keys. `cap-evolve-core` is an optional extra
 (`pip install -e '.[optimize]'`), deliberately excluded from the `[all]`
-extra (it's a 0.x, commit-pinned package, not on PyPI).
+extra (it's 0.x and not on PyPI; pinned to the v0.2.0 tag's commit).
 
 ## Open Questions
 

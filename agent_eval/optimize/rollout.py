@@ -279,9 +279,15 @@ def _execute_local(manifest: dict, task_id: str, candidate_dir: Path, run_id: st
 
     try:
         run_result = json.loads((run_dir / "run_result.json").read_text(encoding="utf-8"))
-        case_result = (run_result.get("per_case") or {}).get(task_id) or {}
     except (OSError, ValueError):
-        case_result = {}
+        run_result = {}
+    # Case mode records an infra failure per case; batch mode records it once
+    # for the run, in a top-level error_class (exit_code mirrors the skill's
+    # own exit, not infra health, so it is not an error signal here).
+    case_result = (run_result.get("per_case") or {}).get(task_id) or {}
+    infra_error = case_result.get("error") or case_result.get("error_class")
+    if manifest["execution_mode"] == "batch":
+        infra_error = infra_error or run_result.get("error_class")
     # Case mode writes the transcript per case; batch mode writes it once for
     # the run — which, for a one-case rollout, is this case's transcript.
     output = ""
@@ -289,7 +295,7 @@ def _execute_local(manifest: dict, task_id: str, candidate_dir: Path, run_id: st
         if output_file.is_file():
             output = output_file.read_text(encoding="utf-8", errors="replace")
             break
-    return bool(case_result.get("error") or case_result.get("error_class")), output
+    return bool(infra_error), output
 
 
 def _execute_local_steps(
@@ -357,6 +363,12 @@ def _execute_local_steps(
         # score.py actually produced, instead of crashing the whole rollout
         # on an exit code that doesn't speak to data availability.
         pass
+    try:
+        # The same report.html a plain /eval-run leaves (no model calls; the
+        # Harbor substrate's agent_eval.harbor.run writes its own).
+        _run_script(manifest, "report.py", "--run-id", run_id, "--config", config_path)
+    except RuntimeError:
+        pass  # a report is a convenience, never a reason to lose the measurement
 
 
 # ── Harbor substrate ─────────────────────────────────────────────────────────
@@ -388,12 +400,19 @@ def _harbor_files(manifest: dict) -> list:
     ]
 
 
-def _harbor_transcript(job_dir: str | None) -> str:
-    if not job_dir or not Path(job_dir).is_dir():
+def _harbor_transcript(job_dir: str | None, run_dir: Path) -> str:
+    """The trial's agent transcript, read only from inside this run's own
+    Harbor jobs dir (``job_dir`` comes from run_result.json, not trusted)."""
+    jobs_root = (run_dir / "harbor-jobs").resolve()
+    if not job_dir:
+        return ""
+    job = Path(job_dir).resolve()
+    if not job.is_dir() or not job.is_relative_to(jobs_root):
         return ""
     for pattern in ("*/agent/claude-code.txt", "*/agent/*.txt", "*/agent/trajectory.json"):
-        for path in sorted(Path(job_dir).glob(pattern)):
-            return path.read_text(encoding="utf-8", errors="replace")
+        for path in sorted(job.glob(pattern)):
+            if not path.is_symlink() and path.resolve().is_relative_to(jobs_root):
+                return path.read_text(encoding="utf-8", errors="replace")
     return ""
 
 
@@ -442,7 +461,7 @@ def _execute_harbor(
         return True, ""
     failed = {entry[0] for entry in (run_result.get("trial_errors") or []) + (run_result.get("infra_errors") or [])
               if isinstance(entry, (list, tuple)) and entry}
-    return task_id in failed, _harbor_transcript(run_result.get("harbor_job_dir"))
+    return task_id in failed, _harbor_transcript(run_result.get("harbor_job_dir"), run_dir)
 
 
 def _mark_unconditional_judge_errors(summary: dict, task_id: str, config: EvalConfig) -> None:
