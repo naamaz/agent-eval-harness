@@ -1,0 +1,26 @@
+{
+  "train": [
+    "case-011",
+    "case-015",
+    "case-006",
+    "case-002",
+    "case-010",
+    "case-003",
+    "case-004",
+    "case-012"
+  ],
+  "val": [
+    "case-014",
+    "case-008",
+    "case-009",
+    "case-005"
+  ],
+  "test": [
+    "case-001",
+    "case-007",
+    "case-016",
+    "case-013"
+  ],
+  "seed": 0,
+  "test_used": true
+}

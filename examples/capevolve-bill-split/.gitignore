@@ -1,0 +1,5 @@
+.capevolve/
+eval/runs/
+# Scratch output if the skill is run by hand from this directory
+/artifacts/
+/bill.json

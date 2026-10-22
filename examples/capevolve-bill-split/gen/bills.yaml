@@ -1,0 +1,80 @@
+# Each case: the story the skill sees, and the structured bill the gold answer is computed from.
+# "clean" cases are ones the buggy seed script still gets right (gate stability).
+case-001:
+  story: "Ana and Ben had dinner. Ana had the steak ($30.00) and Ben had the pasta ($20.00). Tax is 10%. Tip 20% on the total after tax."
+  bill: {diners: [Ana, Ben], tax_percent: 10, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Steak, price: 30.00, shared_by: [Ana]}, {name: Pasta, price: 20.00, shared_by: [Ben]}]}
+case-002:
+  story: "Three friends, Carla, Dev and Eli, shared everything equally: two pizzas at $18.00 each and a pitcher of lemonade for $9.00. Tax is 10%, and they tip 20% on the total after tax."
+  bill: {diners: [Carla, Dev, Eli], tax_percent: 10, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Pizza, price: 18.00, shared_by: [Carla, Dev, Eli]}, {name: Pizza, price: 18.00, shared_by: [Carla, Dev, Eli]},
+                 {name: Lemonade, price: 9.00, shared_by: [Carla, Dev, Eli]}]}
+case-003:
+  story: "Four of us ate out. Ana had the salmon ($24.00), Ben the burger ($16.00), and Chloe and Dev shared a pizza ($22.00). Everyone shared the nachos ($12.00). Tax is 8%. Leave an 18% tip on the food before tax."
+  bill: {diners: [Ana, Ben, Chloe, Dev], tax_percent: 8, tip_percent: 18, tip_on: before_tax,
+         items: [{name: Salmon, price: 24.00, shared_by: [Ana]}, {name: Burger, price: 16.00, shared_by: [Ben]},
+                 {name: Pizza, price: 22.00, shared_by: [Chloe, Dev]}, {name: Nachos, price: 12.00, shared_by: [Ana, Ben, Chloe, Dev]}]}
+case-004:
+  story: "Maya and Noah went for brunch. Maya had pancakes ($14.50) and Noah had eggs benedict ($16.25). They split a fruit plate ($9.00). Tax is 7.5%. They tip 20% on the pre-tax amount."
+  bill: {diners: [Maya, Noah], tax_percent: 7.5, tip_percent: 20, tip_on: before_tax,
+         items: [{name: Pancakes, price: 14.50, shared_by: [Maya]}, {name: Eggs benedict, price: 16.25, shared_by: [Noah]},
+                 {name: Fruit plate, price: 9.00, shared_by: [Maya, Noah]}]}
+case-005:
+  story: "Omar, Priya and Quinn got takeout curry. Omar had the vindaloo ($15.00), Priya the korma ($13.00) and Quinn the dal ($11.00). Omar and Priya split a garlic naan ($4.00). Tax is 9%. Tip 15% on the total after tax."
+  bill: {diners: [Omar, Priya, Quinn], tax_percent: 9, tip_percent: 15, tip_on: after_tax,
+         items: [{name: Vindaloo, price: 15.00, shared_by: [Omar]}, {name: Korma, price: 13.00, shared_by: [Priya]},
+                 {name: Dal, price: 11.00, shared_by: [Quinn]}, {name: Garlic naan, price: 4.00, shared_by: [Omar, Priya]}]}
+case-006:
+  story: "Rosa and Sam had dinner. Rosa ordered the risotto ($21.00) and Sam the chicken ($19.00). Tax is 10%. They leave a 20% tip on the total after tax."
+  bill: {diners: [Rosa, Sam], tax_percent: 10, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Risotto, price: 21.00, shared_by: [Rosa]}, {name: Chicken, price: 19.00, shared_by: [Sam]}]}
+case-007:
+  story: "Tara, Uma, Victor and Will went for sushi. Tara and Uma shared a dragon roll ($16.00); Victor had the sashimi ($22.00) and Will the ramen ($14.00). Victor and Will shared edamame ($6.00). Tax is 8.875%. They tip 18% before tax."
+  bill: {diners: [Tara, Uma, Victor, Will], tax_percent: 8.875, tip_percent: 18, tip_on: before_tax,
+         items: [{name: Dragon roll, price: 16.00, shared_by: [Tara, Uma]}, {name: Sashimi, price: 22.00, shared_by: [Victor]},
+                 {name: Ramen, price: 14.00, shared_by: [Will]}, {name: Edamame, price: 6.00, shared_by: [Victor, Will]}]}
+case-008:
+  story: "Xena and Yusuf had tacos. Xena had three tacos ($11.00) and Yusuf had a burrito ($12.00). Xena is treating Yusuf to his horchata ($4.00). Tax is 10%. Tip 20% on the total after tax."
+  bill: {diners: [Xena, Yusuf], tax_percent: 10, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Tacos, price: 11.00, shared_by: [Xena]}, {name: Burrito, price: 12.00, shared_by: [Yusuf]},
+                 {name: Horchata, price: 4.00, shared_by: [Xena]}]}
+case-009:
+  story: "Five coworkers, Ada, Bo, Cy, Di and Ed, ordered lunch. Each had a sandwich at $10.00. Ada, Bo and Cy split a large salad ($15.00). Tax is 6%. They tip 15% on the food before tax."
+  bill: {diners: [Ada, Bo, Cy, Di, Ed], tax_percent: 6, tip_percent: 15, tip_on: before_tax,
+         items: [{name: Sandwich, price: 10.00, shared_by: [Ada]}, {name: Sandwich, price: 10.00, shared_by: [Bo]},
+                 {name: Sandwich, price: 10.00, shared_by: [Cy]}, {name: Sandwich, price: 10.00, shared_by: [Di]},
+                 {name: Sandwich, price: 10.00, shared_by: [Ed]}, {name: Salad, price: 15.00, shared_by: [Ada, Bo, Cy]}]}
+case-010:
+  story: "Fay and Gus had a quick dinner: Fay had soup ($9.00) and Gus a sandwich ($11.00). Tax is 10%. They tip 20% on the total after tax."
+  bill: {diners: [Fay, Gus], tax_percent: 10, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Soup, price: 9.00, shared_by: [Fay]}, {name: Sandwich, price: 11.00, shared_by: [Gus]}]}
+case-011:
+  story: "Hana, Ivan and Jo celebrated a birthday. Hana had the lamb ($27.00), Ivan the fish ($23.00), Jo the gnocchi ($18.00). Hana and Ivan are treating Jo, so they split Jo's gnocchi between them. Tax is 8%. Tip 20% before tax."
+  bill: {diners: [Hana, Ivan, Jo], tax_percent: 8, tip_percent: 20, tip_on: before_tax,
+         items: [{name: Lamb, price: 27.00, shared_by: [Hana]}, {name: Fish, price: 23.00, shared_by: [Ivan]},
+                 {name: Gnocchi, price: 18.00, shared_by: [Hana, Ivan]}]}
+case-012:
+  story: "Kai, Lea and Mo shared a family-style meal: a roast chicken ($33.00), two sides at $7.00 each, and a bottle of wine ($28.00), all split three ways. Tax is 9.25%. Tip 18% after tax."
+  bill: {diners: [Kai, Lea, Mo], tax_percent: 9.25, tip_percent: 18, tip_on: after_tax,
+         items: [{name: Roast chicken, price: 33.00, shared_by: [Kai, Lea, Mo]}, {name: Side, price: 7.00, shared_by: [Kai, Lea, Mo]},
+                 {name: Side, price: 7.00, shared_by: [Kai, Lea, Mo]}, {name: Wine, price: 28.00, shared_by: [Kai, Lea, Mo]}]}
+case-013:
+  story: "Nia and Oz had breakfast. Nia had a bagel ($6.50) and Oz had an omelette ($12.00). Nia is paying for Oz's coffee ($3.50). Tax is 7%. Tip 18% on the pre-tax amount."
+  bill: {diners: [Nia, Oz], tax_percent: 7, tip_percent: 18, tip_on: before_tax,
+         items: [{name: Bagel, price: 6.50, shared_by: [Nia]}, {name: Omelette, price: 12.00, shared_by: [Oz]},
+                 {name: Coffee, price: 3.50, shared_by: [Nia]}]}
+case-014:
+  story: "Pia, Raj, Sol and Tom went for burgers. Each had a burger at $13.00. Pia and Raj split onion rings ($7.00); Sol and Tom split fries ($5.00). Tax is 8%. Tip 20% on the total after tax."
+  bill: {diners: [Pia, Raj, Sol, Tom], tax_percent: 8, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Burger, price: 13.00, shared_by: [Pia]}, {name: Burger, price: 13.00, shared_by: [Raj]},
+                 {name: Burger, price: 13.00, shared_by: [Sol]}, {name: Burger, price: 13.00, shared_by: [Tom]},
+                 {name: Onion rings, price: 7.00, shared_by: [Pia, Raj]}, {name: Fries, price: 5.00, shared_by: [Sol, Tom]}]}
+case-015:
+  story: "Uli and Val had dinner. Uli had the duck ($28.00) and Val had the vegetable curry ($17.00). Tax is 10%. Tip 20% after tax."
+  bill: {diners: [Uli, Val], tax_percent: 10, tip_percent: 20, tip_on: after_tax,
+         items: [{name: Duck, price: 28.00, shared_by: [Uli]}, {name: Vegetable curry, price: 17.00, shared_by: [Val]}]}
+case-016:
+  story: "Wren, Xavi and Yara grabbed pizza. Wren had a calzone ($14.00). Xavi and Yara shared a large pizza ($21.00). Everyone shared garlic knots ($6.00). Tax is 8.25%. They tip 15% on the food before tax."
+  bill: {diners: [Wren, Xavi, Yara], tax_percent: 8.25, tip_percent: 15, tip_on: before_tax,
+         items: [{name: Calzone, price: 14.00, shared_by: [Wren]}, {name: Large pizza, price: 21.00, shared_by: [Xavi, Yara]},
+                 {name: Garlic knots, price: 6.00, shared_by: [Wren, Xavi, Yara]}]}

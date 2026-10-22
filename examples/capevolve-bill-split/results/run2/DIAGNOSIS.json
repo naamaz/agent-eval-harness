@@ -1,0 +1,13 @@
+{"candidate":"cand_0001","headline":"Fix the buggy split.py (sharing, tip base, rounding) and make it write the artifact; tighten SKILL.md into an ordered procedure",
+"clusters":[
+{"id":"A","name":"Shared item split among all diners","detail":"split.py used diners for any item with 2+ sharers","tasks":["case-005","case-009","case-014"],"scope":"SYSTEMIC","latent":false,"tag":"CAPABILITY-GAP"},
+{"id":"B","name":"Shares don't add up","detail":"floor rounding and a total formula that disagrees with shares","tasks":["case-005","case-009","case-014"],"scope":"SYSTEMIC","latent":false,"tag":"CAPABILITY-GAP"},
+{"id":"C","name":"before_tax tip ignored","detail":"both tip_on branches used food+tax","tasks":["case-009"],"scope":"WIDESPREAD","latent":false,"tag":"CAPABILITY-GAP"},
+{"id":"D","name":"Agent hand-math / wrong output path","detail":"agent overrode script, wrote under .claude/, blocked heredocs","tasks":["case-005","case-009","case-014"],"scope":"WIDESPREAD","latent":false,"tag":"BEHAVIORAL"}],
+"edits":[
+{"id":"E1","title":"Correct computation + cent reconciliation","files":["split-bill/scripts/split.py"],"lever":"COMPUTATION","clusters":["A","B","C"],"blast_radius":"WIDE","verified":"ran on all 4 traces' bills; case-008 unchanged; self-check"},
+{"id":"E2","title":"Input validation with actionable errors","files":["split-bill/scripts/split.py"],"lever":"GUARD","clusters":["A","C"],"blast_radius":"BOUNDED","verified":"bad tip_on exits 2 with hint"},
+{"id":"E3","title":"--out writes artifacts/split.md","files":["split-bill/scripts/split.py"],"lever":"COMPOSITE","clusters":["D"],"blast_radius":"MODERATE","verified":"ran with --out"},
+{"id":"E4","title":"Ordered procedure, slot-filling rules, worked example, trigger description","files":["split-bill/SKILL.md"],"lever":"CONTRACT","clusters":["A","D"],"blast_radius":"MODERATE","verified":"validate() ok, 0 warnings"}],
+"skipped":[{"title":"Rounding convention choice","reason":"no gold; half-up + largest remainder"}],
+"techniques":["bug fix in bundled script","composite compute+write","validation guards","worked example"]}

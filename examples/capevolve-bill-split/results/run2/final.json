@@ -1,0 +1,861 @@
+{
+  "test": {
+    "split": "test",
+    "reward": 0.9166666666666666,
+    "stderr": 0.08333333333333334,
+    "pass_k": {
+      "1": 0.75
+    },
+    "pass_at_k": {
+      "1": 0.75
+    },
+    "per_task": [
+      {
+        "task_id": "case-001",
+        "reward": 1.0,
+        "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          1.0
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.03
+        },
+        "metrics": []
+      },
+      {
+        "task_id": "case-007",
+        "reward": 1.0,
+        "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          1.0
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.04
+        },
+        "metrics": []
+      },
+      {
+        "task_id": "case-013",
+        "reward": 1.0,
+        "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          1.0
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.04
+        },
+        "metrics": []
+      },
+      {
+        "task_id": "case-016",
+        "reward": 0.6666666666666666,
+        "feedback": "Harness reward: 0.6667. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=0.333333",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          0.6666666666666666
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.03
+        },
+        "metrics": []
+      }
+    ],
+    "cost_usd": 0.14,
+    "tokens": 419708,
+    "seconds": 35.472434759140015,
+    "cost_source": {
+      "partial:runner-only": 4
+    },
+    "n_tasks": 4,
+    "n_scored": 4
+  },
+  "best_id": "cand_0001",
+  "test_baseline": {
+    "split": "test",
+    "reward": 0.20833333333333331,
+    "stderr": 0.13819269959814165,
+    "pass_k": {
+      "1": 0.0
+    },
+    "pass_at_k": {
+      "1": 0.0
+    },
+    "per_task": [
+      {
+        "task_id": "case-001",
+        "reward": 0.0,
+        "feedback": "Harness reward: 0.0000. Judge outcomes: adds_up=fail, file_written=fail, shares_correct=0",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          0.0
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.05
+        },
+        "metrics": []
+      },
+      {
+        "task_id": "case-007",
+        "reward": 0.25,
+        "feedback": "Harness reward: 0.2500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          0.25
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.06
+        },
+        "metrics": []
+      },
+      {
+        "task_id": "case-013",
+        "reward": 0.0,
+        "feedback": "Harness reward: 0.0000. Judge outcomes: adds_up=fail, file_written=fail, shares_correct=0",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          0.0
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.06
+        },
+        "metrics": []
+      },
+      {
+        "task_id": "case-016",
+        "reward": 0.5833333333333333,
+        "feedback": "Harness reward: 0.5833. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0.666667",
+        "n": 1,
+        "stderr": 0.0,
+        "trial_rewards": [
+          0.5833333333333333
+        ],
+        "raw": {
+          "errored": false,
+          "errored_trials": 0,
+          "valid_trials": 1,
+          "n_trials": 1,
+          "cost_usd": 0.07
+        },
+        "metrics": []
+      }
+    ],
+    "cost_usd": 0.24,
+    "tokens": 1215257,
+    "seconds": 54.64537286758423,
+    "cost_source": {
+      "partial:runner-only": 4
+    },
+    "n_tasks": 4,
+    "n_scored": 4
+  },
+  "baseline_id": "seed",
+  "test_delta": 0.708333,
+  "best": {
+    "train": {
+      "split": "train",
+      "reward": 1.0,
+      "stderr": 0.0,
+      "pass_k": {
+        "1": 1.0
+      },
+      "pass_at_k": {
+        "1": 1.0
+      },
+      "per_task": [
+        {
+          "task_id": "case-002",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-003",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-004",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-006",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-010",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-011",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-012",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-015",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        }
+      ],
+      "cost_usd": 0.27,
+      "tokens": 838961,
+      "seconds": 65.92606830596924,
+      "cost_source": {
+        "partial:runner-only": 8
+      },
+      "n_tasks": 8,
+      "n_scored": 8
+    },
+    "val": {
+      "split": "val",
+      "reward": 1.0,
+      "stderr": 0.0,
+      "pass_k": {
+        "1": 1.0
+      },
+      "pass_at_k": {
+        "1": 1.0
+      },
+      "per_task": [
+        {
+          "task_id": "case-005",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-008",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-009",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-014",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        }
+      ],
+      "cost_usd": 0.0,
+      "tokens": 0,
+      "seconds": 0.0,
+      "cost_source": {},
+      "n_tasks": 4,
+      "n_scored": 4
+    },
+    "test": {
+      "split": "test",
+      "reward": 0.9166666666666666,
+      "stderr": 0.08333333333333334,
+      "pass_k": {
+        "1": 0.75
+      },
+      "pass_at_k": {
+        "1": 0.75
+      },
+      "per_task": [
+        {
+          "task_id": "case-001",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-007",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-013",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-016",
+          "reward": 0.6666666666666666,
+          "feedback": "Harness reward: 0.6667. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=0.333333",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.6666666666666666
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.03
+          },
+          "metrics": []
+        }
+      ],
+      "cost_usd": 0.14,
+      "tokens": 419708,
+      "seconds": 35.472434759140015,
+      "cost_source": {
+        "partial:runner-only": 4
+      },
+      "n_tasks": 4,
+      "n_scored": 4
+    }
+  },
+  "seed": {
+    "train": {
+      "split": "train",
+      "reward": 0.6875,
+      "stderr": 0.15490492475801315,
+      "pass_k": {
+        "1": 0.625
+      },
+      "pass_at_k": {
+        "1": 0.625
+      },
+      "per_task": [
+        {
+          "task_id": "case-002",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-003",
+          "reward": 0.25,
+          "feedback": "Harness reward: 0.2500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.25
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-004",
+          "reward": 0.25,
+          "feedback": "Harness reward: 0.2500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.25
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-006",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-010",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.04
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-011",
+          "reward": 0.0,
+          "feedback": "Harness reward: 0.0000. Judge outcomes: adds_up=fail, file_written=fail, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.07
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-012",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.07
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-015",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.05
+          },
+          "metrics": []
+        }
+      ],
+      "cost_usd": 0.0,
+      "tokens": 0,
+      "seconds": 0.0,
+      "cost_source": {},
+      "n_tasks": 8,
+      "n_scored": 8,
+      "reused_rollouts": true
+    },
+    "val": {
+      "split": "val",
+      "reward": 0.4875,
+      "stderr": 0.1772180859844728,
+      "pass_k": {
+        "1": 0.25
+      },
+      "pass_at_k": {
+        "1": 0.25
+      },
+      "per_task": [
+        {
+          "task_id": "case-005",
+          "reward": 0.25,
+          "feedback": "Harness reward: 0.2500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.25
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.06
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-008",
+          "reward": 1.0,
+          "feedback": "Harness reward: 1.0000. Judge outcomes: adds_up=pass, file_written=pass, shares_correct=1",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            1.0
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.09
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-009",
+          "reward": 0.45,
+          "feedback": "Harness reward: 0.4500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0.4",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.45
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.05
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-014",
+          "reward": 0.25,
+          "feedback": "Harness reward: 0.2500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.25
+          ],
+          "raw": {
+            "n_trials": 1,
+            "valid_trials": 1,
+            "cost_usd": 0.06
+          },
+          "metrics": []
+        }
+      ],
+      "cost_usd": 0.0,
+      "tokens": 0,
+      "seconds": 0.0,
+      "cost_source": {},
+      "n_tasks": 4,
+      "n_scored": 4
+    },
+    "test": {
+      "split": "test",
+      "reward": 0.20833333333333331,
+      "stderr": 0.13819269959814165,
+      "pass_k": {
+        "1": 0.0
+      },
+      "pass_at_k": {
+        "1": 0.0
+      },
+      "per_task": [
+        {
+          "task_id": "case-001",
+          "reward": 0.0,
+          "feedback": "Harness reward: 0.0000. Judge outcomes: adds_up=fail, file_written=fail, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.05
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-007",
+          "reward": 0.25,
+          "feedback": "Harness reward: 0.2500. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.25
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.06
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-013",
+          "reward": 0.0,
+          "feedback": "Harness reward: 0.0000. Judge outcomes: adds_up=fail, file_written=fail, shares_correct=0",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.0
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.06
+          },
+          "metrics": []
+        },
+        {
+          "task_id": "case-016",
+          "reward": 0.5833333333333333,
+          "feedback": "Harness reward: 0.5833. Judge outcomes: adds_up=fail, file_written=pass, shares_correct=0.666667",
+          "n": 1,
+          "stderr": 0.0,
+          "trial_rewards": [
+            0.5833333333333333
+          ],
+          "raw": {
+            "errored": false,
+            "errored_trials": 0,
+            "valid_trials": 1,
+            "n_trials": 1,
+            "cost_usd": 0.07
+          },
+          "metrics": []
+        }
+      ],
+      "cost_usd": 0.24,
+      "tokens": 1215257,
+      "seconds": 54.64537286758423,
+      "cost_source": {
+        "partial:runner-only": 4
+      },
+      "n_tasks": 4,
+      "n_scored": 4
+    }
+  },
+  "train_equals_val": false
+}
