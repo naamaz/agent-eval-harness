@@ -1,0 +1,1 @@
+prompt: 'Fixed a crash in the login handler when the password field is empty. Closes #142.'

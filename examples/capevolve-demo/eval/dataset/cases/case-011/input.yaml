@@ -1,0 +1,1 @@
+prompt: 'Fixed the dark-mode toggle not persisting across page reloads. Closes #233.'

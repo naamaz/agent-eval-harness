@@ -1,0 +1,77 @@
+# Tiny demo benchmark for the cap-evolve integration (PR #255).
+# A deliberately vague seed skill + deterministic judges = headroom for cap-evolve to find.
+name: commit-msg-demo
+description: Does the commit-msg skill write Conventional Commits messages?
+
+execution:
+  mode: case
+  skill: commit-msg
+  arguments: "{prompt}"
+  timeout: 300
+  max_budget_usd: 0.5
+
+runner:
+  type: claude-code
+  permission_mode: acceptEdits   # headless runs must be allowed to write artifacts/
+
+models:
+  skill: claude-haiku-4-5
+
+permissions:
+  deny:
+    - "mcp__*"
+
+dataset:
+  path: eval/dataset/cases
+  schema: |
+    Each case directory contains:
+    - input.yaml: 'prompt' describes a code change (and mentions an issue number).
+    - annotations.yaml: gold 'expected_type' (Conventional Commits type) and 'issue'.
+
+outputs:
+  - path: artifacts
+    schema: artifacts/COMMIT_MSG — the commit message
+
+judges:
+  - name: file_written
+    description: 'artifacts/COMMIT_MSG exists and is non-empty'
+    check: |
+      msg = next((c for p, c in outputs.get("files", {}).items()
+                  if p.endswith("COMMIT_MSG") and isinstance(c, str)), "")
+      return bool(msg.strip()), "found" if msg.strip() else "missing"
+
+  - name: conventional_format
+    description: 'Subject is `type(scope)?: summary`, <= 72 chars, no trailing period'
+    check: |
+      import re
+      msg = next((c for p, c in outputs.get("files", {}).items()
+                  if p.endswith("COMMIT_MSG") and isinstance(c, str)), "")
+      subject = msg.strip().splitlines()[0] if msg.strip() else ""
+      ok = (re.match(r"^[a-z]+(\([\w./-]+\))?!?: \S", subject) is not None
+            and len(subject) <= 72 and not subject.endswith("."))
+      return ok, repr(subject)
+
+  - name: correct_type
+    description: 'The Conventional Commits type matches the gold type'
+    check: |
+      import re
+      msg = next((c for p, c in outputs.get("files", {}).items()
+                  if p.endswith("COMMIT_MSG") and isinstance(c, str)), "")
+      m = re.match(r"^([a-z]+)", msg.strip())
+      want = outputs.get("annotations", {}).get("expected_type")
+      got = m.group(1) if m else None
+      return got == want, f"got {got}, want {want}"
+
+  - name: issue_footer
+    description: 'The body ends with a `Refs: #N` / `Closes: #N` style footer for the issue'
+    check: |
+      import re
+      msg = next((c for p, c in outputs.get("files", {}).items()
+                  if p.endswith("COMMIT_MSG") and isinstance(c, str)), "")
+      issue = outputs.get("annotations", {}).get("issue")
+      lines = msg.strip().splitlines()
+      ok = len(lines) > 2 and re.match(rf"^[A-Z][\w-]*: #{issue}$", lines[-1].strip()) is not None
+      return ok, repr(lines[-1] if lines else "")
+
+# reward:/optimize: are intentionally omitted — agent-eval-capevolve's intake
+# proposes them into .capevolve/eval.optimize.yaml without touching this file.

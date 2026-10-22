@@ -1,0 +1,1 @@
+prompt: 'Fixed an off-by-one error that dropped the last page of paginated API results. Fixes #77.'

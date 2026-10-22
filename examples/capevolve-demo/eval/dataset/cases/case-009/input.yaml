@@ -1,0 +1,1 @@
+prompt: 'Updated the requests dependency from 2.31 to 2.32 to pick up a security fix. Issue #64.'

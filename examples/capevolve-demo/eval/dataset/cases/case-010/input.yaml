@@ -1,0 +1,1 @@
+prompt: 'Cached compiled regexes in the tokenizer, cutting parse time by 40%. Ref #118.'

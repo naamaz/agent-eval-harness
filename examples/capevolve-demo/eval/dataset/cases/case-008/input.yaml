@@ -1,0 +1,1 @@
+prompt: 'Added support for reading config from TOML files in addition to YAML. Closes #19.'

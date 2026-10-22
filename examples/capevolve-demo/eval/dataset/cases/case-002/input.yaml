@@ -1,0 +1,1 @@
+prompt: 'Added a --json flag to the `status` CLI command so output can be piped to jq. Tracks issue #87.'
